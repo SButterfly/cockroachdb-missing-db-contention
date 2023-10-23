@@ -1,5 +1,6 @@
 package com.example.cockroachdbdemo.repository.retry;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.classify.BinaryExceptionClassifier;
 import org.springframework.classify.BinaryExceptionClassifierBuilder;
 import org.springframework.core.NestedExceptionUtils;
@@ -17,12 +18,13 @@ import java.util.Optional;
  * A more right way would be to extend the {@link BinaryExceptionClassifier}
  * but this approach leaves a fancy builder {@link BinaryExceptionClassifierBuilder};
  */
+@Slf4j
 public class TransientExceptionClassifierRetryPolicy extends BinaryExceptionClassifierRetryPolicy {
 
     public static final String TRANSIENT_CODE = "40001";
 
     public TransientExceptionClassifierRetryPolicy(
-        BinaryExceptionClassifier exceptionClassifier) {
+            BinaryExceptionClassifier exceptionClassifier) {
         super(exceptionClassifier);
     }
 
@@ -36,9 +38,9 @@ public class TransientExceptionClassifierRetryPolicy extends BinaryExceptionClas
     @Override
     public boolean canRetry(RetryContext context) {
         return super.canRetry(context)
-            || Optional.ofNullable(context.getLastThrowable())
-            .map(this::isTransientException)
-            .orElse(true);
+                || Optional.ofNullable(context.getLastThrowable())
+                .map(this::isTransientException)
+                .orElse(true);
     }
 
     /**
@@ -53,8 +55,12 @@ public class TransientExceptionClassifierRetryPolicy extends BinaryExceptionClas
         Optional<SQLException> sqlException = tryGetSQLExceptionCause(throwable);
 
         return sqlException.map(SQLException::getSQLState)
-            .map(TRANSIENT_CODE::equals)
-            .orElse(false);
+                .map(TRANSIENT_CODE::equals)
+                .map(it -> {
+                    log.warn("Caught retractable exception: {}", sqlException);
+                    return it;
+                })
+                .orElse(false);
     }
 
     /**
@@ -66,7 +72,7 @@ public class TransientExceptionClassifierRetryPolicy extends BinaryExceptionClas
      */
     private Optional<SQLException> tryGetSQLExceptionCause(Throwable throwable) {
         if (throwable instanceof TransientDataAccessException
-            || throwable instanceof TransactionSystemException) {  // TX abort on commit's
+                || throwable instanceof TransactionSystemException) {  // TX abort on commit's
             Throwable cause = NestedExceptionUtils.getMostSpecificCause(throwable);
             if (cause instanceof SQLException) {
                 SQLException sqlException = (SQLException) cause;
