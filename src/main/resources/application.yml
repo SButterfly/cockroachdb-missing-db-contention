@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: cockroach-db-demo
+  flyway:
+    enabled: true
+    locations: classpath:migration
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.CockroachDB201Dialect
+        enable_lazy_load_no_trans: true
+        format_sql: true
+    show_sql: true
+
+logging:
+  level:
+    root: INFO
+    org:
+      springframework:
+        orm: DEBUG
+        transaction: DEBUG
+      hibernate:
+        SQL: DEBUG
+        type.descriptor.sql.BasicBinder: TRACE
