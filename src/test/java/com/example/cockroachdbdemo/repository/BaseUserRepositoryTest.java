@@ -173,6 +173,10 @@ public abstract class BaseUserRepositoryTest extends AbstractDBIntegrationTest {
                 .hasSize(2);
     }
 
+    /**
+     * Test to reproduce
+     * https://github.com/cockroachdb/cockroach/issues/112856
+     */
     @Test
     void saveDeleteSaveInParallelTransaction() {
         var code = UUID.randomUUID();
