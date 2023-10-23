@@ -8,15 +8,16 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.containers.CockroachContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest
 @ContextConfiguration(initializers = {AbstractDBIntegrationTest.Initializer.class})
 public abstract class AbstractDBIntegrationTest {
+    private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("cockroachdb/cockroach:latest-v23.1");
 
-    private static final DockerImageName DEFAULT_IMAGE_NAME =
-        DockerImageName.parse("cockroachdb/cockroach");
-    private static final String TAG = "latest-v23.1";
+//            Uncomment, if you want to test with posgresql
+//    private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("postgres:latest");
 
     /*
      * CockroachContainer doesn't allow to set
@@ -24,15 +25,17 @@ public abstract class AbstractDBIntegrationTest {
      * Initialize container first and eventually define datasource.
      */
     static class Initializer
-        implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+            implements ApplicationContextInitializer<ConfigurableApplicationContext> {
         public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
-            CockroachContainer cockroachContainer = new CockroachContainer(DEFAULT_IMAGE_NAME.withTag(TAG));
-            cockroachContainer.start();
+            var container = new CockroachContainer(DEFAULT_IMAGE_NAME);
+//            Uncomment, if you want to test with posgresql
+//            var container = new PostgreSQLContainer(DEFAULT_IMAGE_NAME);
+            container.start();
 
             TestPropertyValues.of(
-                "spring.datasource.url=" + cockroachContainer.getJdbcUrl(),
-                "spring.datasource.username=" + cockroachContainer.getUsername(),
-                "spring.datasource.password=" + cockroachContainer.getPassword()
+                    "spring.datasource.url=" + container.getJdbcUrl(),
+                    "spring.datasource.username=" + container.getUsername(),
+                    "spring.datasource.password=" + container.getPassword()
             ).applyTo(configurableApplicationContext.getEnvironment());
         }
     }
